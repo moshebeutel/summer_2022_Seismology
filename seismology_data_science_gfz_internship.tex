@@ -1,0 +1,113 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{array}
+
+\usepackage{gensymb}
+\usepackage{biblatex} %Imports biblatex package
+\addbibresource{sample.bib} %Import the bibliography file
+\graphicspath{ {./images/} }
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\title{Seismology - Summer Internship 2022 at GFZ Potsdam}
+\author{Moshe Beutel}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+Seismic earthquake research is full of annotated data. Open data sets from seismographic stations contains millions of manually annotated interesting events and is open to seismographic research community.
+Efficient deep learning models developed in the last 4 years to deal with the following main tasks:\textit{ Earthquake detection, Phase Identification} and \textit{  Onset Time Picking} which correspond to the general algorithmic tasks of: Detection, Classification and estimation respectively.
+
+\section{Tasks}
+The tasks we are examining are the following:
+
+\begin{center}
+
+\begin{tabular}{ | m{4cm} | m{3cm}| m{3cm} |m{2cm} |} 
+ \hline
+ Task & Input & Output & Metric \\ 
+ \hline\hline
+ Event Detection & 30s window of seismic waveform & Contains First Arrival & AUC (or F1) \\ 
+ \hline
+ Phase Identification & 10s window of seismic waveform & Detrmine P or S & MCC \\
+ \hline
+ Onset Time Picking & 10s window contains one S or P wave (known) & Determine Onset Time & RMSE \\
+ \hline
+\end{tabular}
+\end{center}
+
+\section{Terminology}
+
+\begin{itemize}
+\item \textbf{P and S Waves} - Short for primary ad secondary waves. \textit{Body Waves} are energy travelling through solid volumes and \textit{Surface Waves} travel through free surfaces. The Body waves travel faster hence called primary or P Waves and the - slower - surface waves  are called Secondary or S Waves.
+
+\item \textbf{Seismic Wave Equation} - 
+
+%\item \textbf{Snell's Law} - A plane wave strikes a horizontal interface between 2 homogeneous layers of velocities $v_{1}, v_{2}$ respectively changes its angle at the interface $\theta_{1} \Rightarrow \theta_{2}$  to preserve the timing of the wavefronts across the interface.
+%$$p = u_{1}sin\theta_{1} = u_{2}sin \theta_{2}$$
+%where:
+%\begin{itemize}
+%\item $p$ is termed the \textit{ray parameter} (or horizontal slowness) and it remains unchanged.
+%\item $u_{i} = \frac{1}{v_{i}}$ is termed the \textit{slowness} 
+%\end{itemize}
+%
+%\item \textbf{Turning Point} - The point where the ray is no longer propagating down the layers ($\theta = 90\degree$).
+
+\item \textbf{Arrival Time} - The time of first discernible motion of a seismic phase.
+
+\item \textbf{Picking} - Measuring (Estimating ???) the arrival time
+
+
+\end{itemize}
+
+
+\section{Models}
+The following models were tested in the benchmark:
+\begin{itemize}
+\item BasicPhaseAE (Woollam et al., 2019)
+\item CNN-RNN Earthquake Detector (CRED; Mousavi, Zhu, et al., 2019)
+\item DeepPhasePick(DPP; Soto \& Schurr, 2021)
+\item Earthquake transformer (EQTransformer; Mousavi et al., 2020)
+\item PhaseNet (Zhu \& Beroza, 2019)
+\end{itemize}
+\section{Limitation}
+
+The noted models, although preformed well on the given tasks using the defined metrics, are still limited in the view of real life applications like early warning scenarios.
+
+\begin{itemize}
+\item \textbf{Datasets Limitations}  -
+\begin{itemize}
+\item Uncertainties and nonuniqueness of manual labels owing to limited resolution, presence of noise, \textbf{different levels of expertise}, cognitive biases, and inherent ambiguity of
+tasks is a limiting factor. In image object classification for example tasks this is generally non-issue because normally most annotators would agree about pictures of cars,cats,tables and other daily life objects.
+\item Not all seismic signals classes and typical noise are covered in the datasets - e.g. data from nodal seismometers at local distances, mine blasts, or volcanic signals.
+\end{itemize}
+
+ 
+\item \textbf{Tasks Limitation} - The tasks defined above does not exactly represent real life scenarios where:
+\begin{itemize}
+\item There are no defined time windows
+\item More than one event may occur in a given time frame
+\item The metrics defined does not take into account how early the tested algorithms would be able to identify an event onset
+\item In continous time setup the false positive rate needs to be significantly lower than in post-processing.
+
+\end{itemize}
+
+\item Transfer Learning - It is yet unclear which datasets are most suitable for pretraining models
+
+\end{itemize}
+
+
+\section{Research Question Formulation}
+The research question subjeect for this internship term deals with quantifying the uncertainty of a given model performence.
+The 6-week time frame is ofcourse not suitable to solve that big problem so the exact task is yet to define
+
+
+
+
+
+\end{document}
