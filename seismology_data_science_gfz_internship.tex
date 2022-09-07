@@ -6,8 +6,52 @@
 \usepackage{mathtools}
 \usepackage{graphicx}
 \usepackage{array}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
 
 \usepackage{gensymb}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ 
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  firstnumber=1,                % start line enumeration with line 1000
+  frame=single,	                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language= Python,                 % the language of the code
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=none,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=2,	                   % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
 \usepackage{biblatex} %Imports biblatex package
 \addbibresource{sample.bib} %Import the bibliography file
 \graphicspath{ {./images/} }
@@ -46,7 +90,7 @@ The tasks we are examining are the following:
 \begin{itemize}
 \item \textbf{P and S Waves} - Short for primary ad secondary waves. \textit{Body Waves} are energy travelling through solid volumes and \textit{Surface Waves} travel through free surfaces. The Body waves travel faster hence called primary or P Waves and the - slower - surface waves  are called Secondary or S Waves.
 
-\item \textbf{Seismic Wave Equation} - 
+%\item \textbf{Seismic Wave Equation} - 
 
 %\item \textbf{Snell's Law} - A plane wave strikes a horizontal interface between 2 homogeneous layers of velocities $v_{1}, v_{2}$ respectively changes its angle at the interface $\theta_{1} \Rightarrow \theta_{2}$  to preserve the timing of the wavefronts across the interface.
 %$$p = u_{1}sin\theta_{1} = u_{2}sin \theta_{2}$$
@@ -94,7 +138,6 @@ tasks is a limiting factor. In image object classification for example tasks thi
 \item More than one event may occur in a given time frame
 \item The metrics defined does not take into account how early the tested algorithms would be able to identify an event onset
 \item In continous time setup the false positive rate needs to be significantly lower than in post-processing.
-
 \end{itemize}
 
 \item Transfer Learning - It is yet unclear which datasets are most suitable for pretraining models
@@ -102,12 +145,96 @@ tasks is a limiting factor. In image object classification for example tasks thi
 \end{itemize}
 
 
+\section{Detailed Actual Benchmark Protocol}
+The following section describes the benchmark protocol as described in "Which picker ..." ( - I will call it "the paper " in this section) and  implemented in code of the  \href{https://github.com/seisbench/pick-benchmark}{pick-benchmark GitHub Repo}. the repo is based on the Seibench package and pytorch-lightning.
+
+\subsection{Training}
+The training used the Seisbench's data generation module for building training pipelines.
+
+\textbf{Window Length} - the paper states that with probability of 2/3 a window with exactly  a single pick is selected and with probability of 1/3 a random unchanged window is selected (that can also be a single pick window so the actual probability of a single pick window is more than 2/3). The paper explicily states that "\textit{The windows selected for the tasks are identical across all models and their length is independent of the specific model.}". Looking at the code at benchmark/models.py it seems that window lengths are different e.g. EQTransformer gets a window of size 12000 samples and PhaseNet gets a window of size 6000 samples.
+
+\textbf{Preprocessing} - 
+
+EQTransformer - Defines  block 1 and block. At train time there is another block of preprocessing between.
+
+CRED  preprocessing includes resampling normalization and stft on top of the windowing. 
+
+
+\textbf{hyperparameters} - How were they chosen. different by models ???
+%
+%\begin{minipage}{\linewidth}
+%\begin{lstlisting}[caption=\textbf{Symbol Generation} ]
+%function skn = create_pilot_signals(n_trans, SNR, N)
+%P = 10 ^ (SNR/10) ;
+%skn = zeros(n_trans,N);
+%real_sign = randi([0, 1], n_trans,N);
+%imag_sign = randi([0, 1], n_trans,N);
+%% skn = zeros(32,1);
+%% real_sign = randi([0, 1],32,1);
+%% imag_sign = randi([0, 1],32,1);
+%skn(real_sign == 0) = skn(real_sign == 0) - 1;
+%skn(real_sign == 1) = skn(real_sign == 1) + 1;
+%skn(imag_sign == 0) = skn(imag_sign == 0) - 1j;
+%skn(imag_sign == 1) = skn(imag_sign == 1) + 1j;
+%skn = P * skn * sqrt(2);
+%% skn is the desired pilot signal
+%end
+%\end{lstlisting}
+%\end{minipage}
 \section{Research Question Formulation}
-The research question subjeect for this internship term deals with quantifying the uncertainty of a given model performence.
-The 6-week time frame is ofcourse not suitable to solve that big problem so the exact task is yet to define
+The research question subject for this internship term deals with quantifying the uncertainty of a given model performance.
+The 6-week time frame is of course not suitable to solve that big problem so the exact task is yet to define.
+
+\subsection{Uncertainty Issues}
+The following are different sources or symptoms of uncertainty that rises during benchmarking the pickers:
+\begin{itemize}
+\item The variance (???) between human labeling is about 0.2 seconds 
+\item Different window limits for the same recording results with different picking (Had the training protocol contained overlapping windows ???)
+\item Noisy environments - lower SNRs - are expected to perform worse is it always what is happening? 
+\item Different seismic machine learning models present different probability levels to describe the same certainty 
+\end{itemize}
 
 
+\subsection{Proposed Naive Checks}
+This section describes some preliminary tests and actions that intuitively arise from the described issues
+
+\begin{itemize}
+\item Normalize output probabilities of the different machine learning models (Guy's work ???).
+\item Gradually add (Gaussian) noise to existing datasets untill model predictions are worthless. Analyze different model probabilities as a function of the noise level added (Joachim's offer). This test will also output model robustness to noise.
+\item If overlapping windows were not included in the original benchmark try it. 
+\item The previous 2 points are just data augmentation that is very often applied in Image Detection and Classification training protocols. The Seisbench generator module contains augmention module that implements the following augmentation functions:
+\begin{itemize}
+\item Normalizing - demeaning, detrending and amplitude normalization (in this order).
+\item Filter -  based on scipy.signal.butter
+\item FilterKeys - Filter out features that are not needed for training ???
+\item ChangeDtype - Cast data type to a given desired type.
+\item OneOf - a meta-augmentation that runs a single augmentation according to a given probabilities list w.r.t an augmentation list.
+\item NullAugmentation - NoOp for OneOf
+\item ChannelDropout - Zeroes out 0 to c-1 channels randomly. Scales up the remaining channels s.t. overall energy remains unchaged.
+\end{itemize}
+
+Consider implementing data augmentation module to Seisbech that will transform original datasets  in memory in the \href{https://pytorch.org/vision/main/transforms.html}{torchvision manner} and preform:
+\begin{itemize}
+\item Cropping in time
+\item Amplitude scaling
+\item Frequency scaling
+\item Filtering
+\end{itemize}
+\item Add noise check to all tasks - Event Detection, phase identification and onset time picking
+\end{itemize}
 
 
+\section{TODOs}
+\begin{itemize}
+\item \textbf{Understand benchmark protocol using pick-benchmark repo - window size, augmentations  specifically overlapping windows and filters, output thresholds ...} Most important for now need to check whether different window sizes were used for different models and generally whether different augmentations were used. 
+\item Bar.py contains implementation ???  of the "Baer-Kradolfer picker (Baer \& Kradolfer, 1987), as
+baseline. The Baer-Kradolfer picker depends on four parameters: a minimum required time to declare an event, a
+maximum time allowed below a threshold for event detection, and two thresholds. For details on the parameters,
+we refer to (Baer \& Kradolfer, 1987) or (Kueperkoch et al., 2012)." from which picker paper
+
+\item What is the role of bayesian-optimization package in pick-benchmark repo if GPs are needed use gpytorch
+\item GPs for distribution learning
+\item Generative models for distribution learning
+\end{itemize}
 
 \end{document}
