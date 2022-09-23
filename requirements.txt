@@ -1,0 +1,6 @@
+#pip3 install torch==1.8.2 torchvision==0.9.2 torchaudio==0.8.2 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cpu
+seisbench~=0.2.5
+numpy~=1.23.3
+pandas~=1.5.0
+matplotlib~=3.5.0 # newest 3.6.0 version has the problem : "AttributeError: module 'backend_interagg' has no attribute 'FigureCanvas'"
+Pillow~=9.2.0
