@@ -3,6 +3,7 @@ import torch
 
 def snr_to_factor(trace, label, clean_snr, desired_snr, noise_trace, calc_snr, precision=0.0099):
     assert desired_snr <= int(clean_snr), 'desired_snr should be less than the clean snr'
+    label = int(label)
     factor = 0
     diff = 100
     fix_step = 100.0
