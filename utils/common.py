@@ -7,7 +7,9 @@ import random
 
 import numpy as np
 import torch
-
+from seisbench import models as sbm
+from seisbench.models import SeisBenchModel
+from typing import Type
 
 def config_logger(name='default', level=logging.DEBUG, log_folder='../log/'):
     # config logger
@@ -73,6 +75,10 @@ def max_onset_pred(pred_probs):
     return torch.argmax(pred_probs[:, 0], dim=1)
 
 
+def predict(trace, model):
+    return max_onset_pred(eval_batch(trace.unsqueeze(dim=0), model=model))
+
+
 def shuffle_tensors(tensors: list):
     from more_itertools import random_permutation
     assert len(tensors) > 0, 'List of tensors is empty'
@@ -94,3 +100,36 @@ def load_pretrained_model_from_file(filename: str):
     assert filename.endswith('.pth'), f'Expected pth file. Got {filename}'
     if not os.path.exists(filename):
         raise FileExistsError(f'{filename} is not a valid file or file does not exist.')
+
+
+def get_residual(prediction: int, label: int)->int:
+    return int(torch.abs(prediction-label))
+
+
+def try_get_saved_pt(filename: str, directory: str)->torch.tensor:
+    a = None
+    full_file_path = os.path.join(directory, filename)
+    print('###' + full_file_path)
+    if os.path.exists(full_file_path):
+        a = torch.load(full_file_path)
+    return a
+
+
+def load_dataset_and_labels(dataset_path: str, labels_path: str)->(torch.tensor, torch.tensor):
+    dataset = torch.load(dataset_path)
+    labels = torch.load(labels_path)
+
+    assert dataset.shape[0] == labels.shape[
+        0], f'Expected one label for each trace. Got {labels.shape[0]} labels for {dataset.shape[0]} traces.'
+
+    return dataset, labels
+
+
+def load_pretrained_model(model_class: Type[SeisBenchModel], dataset_trained_on):
+    print(f'Working with phasenet on {str.upper(dataset_trained_on)}')
+    model_class_name = str(model_class)
+    print(f'Load {model_class_name} pretrained weights')
+    pretrained_weights = model_class.list_pretrained(details=False)
+    print(f'{model_class_name} pretrained keys', pretrained_weights)
+    assert dataset_trained_on in pretrained_weights
+    return model_class.from_pretrained(dataset_trained_on)
