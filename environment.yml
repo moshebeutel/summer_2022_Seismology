@@ -1,0 +1,11 @@
+name: seis
+dependencies:
+- python
+- pip
+- ipython
+- jupyter
+- matplotlib
+- scipy
+- pip:
+  - seisbench
+  - obspy
