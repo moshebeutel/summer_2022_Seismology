@@ -9,36 +9,16 @@ from snr.calc_snr import CalcSNR, str2snr_strategy
 from snr.conversions import snr_to_factor
 from utils.common import config_logger, set_seed
 
-import os
-from obspy import read
-
 
 def create_noised_traces_shifted_noise(trace, full_noise_trace, factor, num_of_shifts: int = 5,
                                        sampling_rate: int = 100) -> list[torch.tensor]:
     from_seconds = lambda sh: sh * sampling_rate
     num_samples = trace.shape[-1]
     shifted_noise_traces = [
-        trace.clone() + factor * full_noise_trace[from_seconds(sh):(num_samples + from_seconds(sh))].clone()
+        trace.clone() + factor * full_noise_trace[:, from_seconds(sh):(num_samples + from_seconds(sh))].clone()
         for sh in range(num_of_shifts + 1)]
 
     return shifted_noise_traces
-
-
-def get_random_noise_trace(noises_path: str = 'Noises'):
-    noises_folders = os.listdir(noises_path)
-    random_folder = random.choice(noises_folders)
-    noises_in_folder = os.listdir(os.path.join(noises_path, random_folder))
-    random_noise = random.choice(noises_in_folder)
-    st = read(os.path.join(noises_path, random_folder, random_noise))
-    return torch.from_numpy(st[0].data)
-
-
-def get_random_noise_window(tr, desired_window_size=3001):
-    full_length = tr.shape[0]
-    if full_length <= desired_window_size:
-        return full_length
-    rand_idx = random.randint(0, full_length - desired_window_size)
-    return tr[rand_idx:rand_idx + desired_window_size]
 
 
 def create_noise_trace(whole_trace, onset_not_adjusted, noise_length, delta=10):

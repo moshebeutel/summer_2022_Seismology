@@ -5,7 +5,7 @@ from visualization.comparing_plots import plot_compare
 
 def fft_filter_experiment(traces_list: list, label_list: list, model, sample_rate: int, residual_threshold_seconds: int,
                           lower_cut_off: int, upper_cut_off: int, plot_fixed_traces=False,
-                          silent_prints=True):
+                          silent_prints=True, eval_fn=None):
     assert lower_cut_off < upper_cut_off, f'Expected lower_cut_off < upper_cut_off. ' \
                                           f'Got lower_cut_off = {lower_cut_off} upper_cut_off = {upper_cut_off}'
     # Enable print silencing by the caller
@@ -17,9 +17,9 @@ def fft_filter_experiment(traces_list: list, label_list: list, model, sample_rat
         filtered = filter_fft(input_signal=noised_trace, lower_cut_off=lower_cut_off, upper_cut_off=upper_cut_off,
                               sample_rate=sample_rate)
 
-        problematic_prediction = predict(noised_trace, model=model)
+        problematic_prediction = predict(noised_trace, model=model, eval_fn=eval_fn)
 
-        filtered_prediction = predict(filtered.float(), model=model)
+        filtered_prediction = predict(filtered.float(), model=model, eval_fn=eval_fn)
 
         problematic_residual = get_residual(problematic_prediction, le_label)
 

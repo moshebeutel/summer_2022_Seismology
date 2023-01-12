@@ -34,20 +34,18 @@ def plot_compare(signals: list[torch.tensor], titles: list[str]):
         ax.plot(s)
 
 
-def plot_experiment_list(experiment_traces: list[torch.tensor], label: int, model: torch.nn.Module, save_plots_to: str):
+def plot_experiment_list(experiment_traces: list[torch.tensor], label: int, predictions: list[int], save_plots_to: str):
     num_traces = len(experiment_traces)
     fig, axs = plt.subplots(num_traces, sharey='all', figsize=(8, num_traces * 2))
     fig.suptitle('Merging Noise with Shifts')
-    for i, nt in enumerate(experiment_traces):
+    for i, (nt, pred) in enumerate(zip(experiment_traces, predictions)):
         axs[i].plot(nt[0])
 
         snr = CalcSNR(SnrCalcStrategy.ENERGY_RATIO)(nt[0].numpy(), onset=label)
-
-        prediction = predict(nt, model=model)
-
+        # TODO remove prediction call. call function with predictions parameter
         axs[i].title.set_text(
-            f'Shift {i} seconds. SNR {snr}, Prediction {int(prediction)}'
-            f' label {label} residual {int(torch.abs(label - prediction))}')
+            f'Shift {i} seconds. SNR {snr}, Prediction {pred}'
+            f' label {label} residual {abs(label - pred)}')
 
     fig.tight_layout()
     if save_plots_to:

@@ -75,8 +75,9 @@ def max_onset_pred(pred_probs):
     return torch.argmax(pred_probs[:, 0], dim=1)
 
 
-def predict(trace, model):
-    return max_onset_pred(eval_batch(trace.unsqueeze(dim=0), model=model))
+def predict(trace, model, eval_fn=None):
+    evaluation_fn = eval_batch if eval_fn is None else eval_fn
+    return max_onset_pred(evaluation_fn(trace.unsqueeze(dim=0), model=model))
 
 
 def shuffle_tensors(tensors: list):
@@ -126,10 +127,19 @@ def load_dataset_and_labels(dataset_path: str, labels_path: str)->(torch.tensor,
 
 
 def load_pretrained_model(model_class: Type[SeisBenchModel], dataset_trained_on):
-    print(f'Working with phasenet on {str.upper(dataset_trained_on)}')
+    print(f'Working with {model_class} on {str.upper(dataset_trained_on)}')
     model_class_name = str(model_class)
     print(f'Load {model_class_name} pretrained weights')
     pretrained_weights = model_class.list_pretrained(details=False)
     print(f'{model_class_name} pretrained keys', pretrained_weights)
     assert dataset_trained_on in pretrained_weights
     return model_class.from_pretrained(dataset_trained_on)
+
+
+def standardize_trace(trace: torch.tensor):
+    m = trace.float().mean(dim=-1, keepdim=True).unsqueeze(dim=0)
+    std = trace.float().std(dim=-1, keepdim=True).unsqueeze(dim=0)
+    trace = trace.unsqueeze(dim=0) if trace.dim() == 1 else trace
+    standardized = torch.stack([(trace[ch] - m[0, ch]) / std[0, ch] for ch in range(trace.shape[0])], dim=0)
+    assert standardized.shape == trace.shape, f'Standardization should not change shape. Got {standardize_trace.shape}'
+    return standardized
