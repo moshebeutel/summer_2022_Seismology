@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from obspy import read, Stream
 from seisbench import generate as sbg
+from seisbench.data import WaveformDataset
 from torch.utils.data import DataLoader
 
 from snr.calc_snr import CalcSNR, SnrCalcStrategy
@@ -51,7 +52,7 @@ def get_n_random_noises(num_noises: int,
                                                                                 sampling_rate=sampling_rate,
                                                                                 silent_exception_prints=silent_exception_prints),
                                                       desired_window_size=desired_window_size)
-                                       for _ in tqdm(range(num_noises))]
+                              for _ in tqdm(range(num_noises))]
         print(f'Created a list of {int(len(random_noises_list))} random noises of shape {random_noises_list[0].shape}')
         print('stack to tensor')
         random_n_noises = torch.stack(random_noises_list, dim=0)
@@ -124,7 +125,8 @@ def trim_to_maximum_aligned_time_segment(st: Stream) -> Stream:
     return st_trimmed
 
 
-def get_random_noise_trace(noises_path: str = 'Noises', sampling_rate: float = -1, silent_exception_prints=False)->torch.tensor:
+def get_random_noise_trace(noises_path: str = 'Noises', sampling_rate: float = -1,
+                           silent_exception_prints=False) -> torch.tensor:
     st = None
     noises_folders = os.listdir(noises_path)
     random_folder = random.choice(noises_folders)
@@ -145,7 +147,8 @@ def get_random_noise_trace(noises_path: str = 'Noises', sampling_rate: float = -
     return torch.stack([torch.from_numpy(tr.data[:min_num_samples]) for tr in st.traces], dim=0)
 
 
-def create_loader_by_phase_and_length(phase_label: str, trace_length: int=, targets_path: str=, batch_size: int)-> (DataLoader, int):
+def create_loader_by_phase_and_length(phase_label: str, trace_length: int, targets_path: str, data: WaveformDataset,
+                                      batch_size: int) -> (DataLoader, int):
     targets_task23 = pd.read_csv(os.path.join(targets_path, 'task23.csv'))
     merged_metadata = pd.merge(data.metadata, targets_task23, on='trace_name')
     requested_event_list = []
