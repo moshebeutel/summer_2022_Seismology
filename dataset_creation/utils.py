@@ -1,8 +1,13 @@
 import os
 import random
 
+import numpy as np
+import pandas as pd
+
 import torch
 from obspy import read, Stream
+from seisbench import generate as sbg
+from torch.utils.data import DataLoader
 
 from snr.calc_snr import CalcSNR, SnrCalcStrategy
 from snr.conversions import snr_to_factor
@@ -138,3 +143,34 @@ def get_random_noise_trace(noises_path: str = 'Noises', sampling_rate: float = -
     # Deal with cases where after interpolation traces are not equal length
     min_num_samples = min([int(len(tr)) for tr in st.traces])
     return torch.stack([torch.from_numpy(tr.data[:min_num_samples]) for tr in st.traces], dim=0)
+
+
+def create_loader_by_phase_and_length(phase_label: str, trace_length: int=, targets_path: str=, batch_size: int)-> (DataLoader, int):
+    targets_task23 = pd.read_csv(os.path.join(targets_path, 'task23.csv'))
+    merged_metadata = pd.merge(data.metadata, targets_task23, on='trace_name')
+    requested_event_list = []
+    filtered_metadata = merged_metadata[(merged_metadata.phase_label == phase_label)]
+    if requested_event_list:
+        filtered_metadata = filtered_metadata[filtered_metadata.source_id.isin(requested_event_list)]
+    else:
+        print('All events will contribute to the resulting dataset')
+    gen = sbg.SteeredGenerator(data, filtered_metadata)
+    print(f'Generator contains  {len(gen)} relevant traces')
+    augmentations = [
+        sbg.ChangeDtype(np.float32),
+        sbg.Normalize(demean_axis=-1, amp_norm_axis=-1, amp_norm_type="peak"),
+        sbg.SteeredWindow(windowlen=trace_length, strategy="pad")
+    ]
+    gen.add_augmentations(augmentations)
+
+    @gen.augmentation
+    def get_arrival_sample(state_dict):
+        _, metadata = state_dict["X"]
+        key = f"trace_{state_dict['_control_']['full_phase_label']}_arrival_sample"
+        state_dict['station_code'] = (metadata['station_code'], key)
+        state_dict["onset_sample"] = (metadata[key], None)
+
+    num_traces = int(len(gen))
+
+    data_loader = DataLoader(gen, batch_size=batch_size, shuffle=True, num_workers=2)
+    return data_loader, num_traces
