@@ -141,5 +141,5 @@ def standardize_trace(trace: torch.tensor):
     std = trace.float().std(dim=-1, keepdim=True).unsqueeze(dim=0)
     trace = trace.unsqueeze(dim=0) if trace.dim() == 1 else trace
     standardized = torch.stack([(trace[ch] - m[0, ch]) / std[0, ch] for ch in range(trace.shape[0])], dim=0)
-    assert standardized.shape == trace.shape, f'Standardization should not change shape. Got {standardize_trace.shape}'
+    assert standardized.shape == trace.shape, f'Standardization should not change shape. Got {standardized.shape}'
     return standardized
