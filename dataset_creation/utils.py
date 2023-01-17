@@ -10,33 +10,9 @@ from seisbench import generate as sbg
 from seisbench.data import WaveformDataset
 from torch.utils.data import DataLoader
 
-from snr.calc_snr import CalcSNR, SnrCalcStrategy
 from snr.conversions import snr_to_factor
-from utils.common import get_residual, predict, try_get_saved_pt, standardize_trace
+from utils.common import try_get_saved_pt
 from tqdm import tqdm
-
-
-def find_large_error_traces(dataset: torch.tensor, labels: torch.tensor, model: torch.nn.Module,
-                            threshold_samples: int = 100, eval_fn=None) -> list[int]:
-    assert dataset.shape[0] == labels.shape[0]
-    large_error_idxs = [i for i in tqdm(range(dataset.shape[0])) if
-                        get_residual(prediction=predict(trace=dataset[i], model=model, eval_fn=eval_fn),
-                                     label=labels[i]) > threshold_samples]
-
-    return large_error_idxs
-
-
-def search_large_errors_given_desired_snr(model: torch.nn.Module, dataset: torch.tensor, labels: torch.tensor,
-                                          noise_traces: torch.tensor,
-                                          desired_snr: int = 10, calc_snr=CalcSNR(SnrCalcStrategy.ENERGY_RATIO)):
-    noised_traces_list = create_noisy_traces(calc_snr=calc_snr, dataset=dataset, desired_snr=desired_snr, labels=labels,
-                                             noise_traces=noise_traces)
-
-    noisy_dataset = torch.stack(noised_traces_list, dim=0)
-
-    large_error_indexes = find_large_error_traces(dataset=noisy_dataset, labels=labels, model=model)
-
-    return large_error_indexes
 
 
 def get_n_random_noises(num_noises: int,

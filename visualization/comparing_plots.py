@@ -5,7 +5,7 @@ import torch
 from matplotlib import pyplot as plt
 
 from snr.calc_snr import CalcSNR, SnrCalcStrategy
-from utils.common import predict
+from evaluation.noisy_dataset_evaluation import predict
 
 
 def plot_compare_fft(sig1, title1, sig2, title2, sample_rate):

@@ -4,12 +4,15 @@ import os
 import sys
 import time
 import random
-
 import numpy as np
 import torch
-from seisbench import models as sbm
 from seisbench.models import SeisBenchModel
 from typing import Type
+
+
+def sublist_compement(containing_list: list, sublist: list):
+    return [i for i in containing_list if i not in sublist]
+
 
 def config_logger(name='default', level=logging.DEBUG, log_folder='../log/'):
     # config logger
@@ -64,27 +67,11 @@ def set_seed(seed, cudnn_enabled=True):
     torch.backends.cudnn.deterministic = True
 
 
-def eval_batch(batch, model):
-    with torch.no_grad():
-        pred = model(batch)
-        pred = pred.cpu()
-    return pred
-
-
-def max_onset_pred(pred_probs):
-    return torch.argmax(pred_probs[:, 0], dim=1)
-
-
-def predict(trace, model, eval_fn=None):
-    evaluation_fn = eval_batch if eval_fn is None else eval_fn
-    return max_onset_pred(evaluation_fn(trace.unsqueeze(dim=0), model=model))
-
-
 def shuffle_tensors(tensors: list):
-    from more_itertools import random_permutation
     assert len(tensors) > 0, 'List of tensors is empty'
     m = tensors[0].shape[0]
-    indices = list(random_permutation(range(m)))
+    indices = list(range(m))
+    random.shuffle(indices)
     ret_tensors = [t[indices] for t in tensors if t.shape[0] == m]
     assert len(ret_tensors) == len(tensors)
     return ret_tensors
@@ -103,11 +90,7 @@ def load_pretrained_model_from_file(filename: str):
         raise FileExistsError(f'{filename} is not a valid file or file does not exist.')
 
 
-def get_residual(prediction: int, label: int)->int:
-    return int(torch.abs(prediction-label))
-
-
-def try_get_saved_pt(filename: str, directory: str)->torch.tensor:
+def try_get_saved_pt(filename: str, directory: str) -> torch.tensor:
     a = None
     full_file_path = os.path.join(directory, filename)
     print('###' + full_file_path)
@@ -116,7 +99,7 @@ def try_get_saved_pt(filename: str, directory: str)->torch.tensor:
     return a
 
 
-def load_dataset_and_labels(dataset_path: str, labels_path: str)->(torch.tensor, torch.tensor):
+def load_dataset_and_labels(dataset_path: str, labels_path: str) -> (torch.tensor, torch.tensor):
     dataset = torch.load(dataset_path)
     labels = torch.load(labels_path)
 
@@ -143,3 +126,7 @@ def standardize_trace(trace: torch.tensor):
     standardized = torch.stack([(trace[ch] - m[0, ch]) / std[0, ch] for ch in range(trace.shape[0])], dim=0)
     assert standardized.shape == trace.shape, f'Standardization should not change shape. Got {standardized.shape}'
     return standardized
+
+
+def assert_path_exists(path_str: str, name: str = ''):
+    assert os.path.exists(path_str), f'{name} {path_str} does not exist'

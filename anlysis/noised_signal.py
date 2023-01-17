@@ -11,7 +11,8 @@ import torch
 
 from snr.calc_snr import CalcSNR
 from snr.conversions import snr_to_factor
-from utils.common import config_logger, set_seed, eval_batch, max_onset_pred
+from utils.common import config_logger, set_seed
+from evaluation.noisy_dataset_evaluation import eval_batch, max_onset_pred
 
 
 # import wandb as wandb
