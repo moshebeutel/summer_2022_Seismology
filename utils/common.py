@@ -10,7 +10,7 @@ from seisbench.models import SeisBenchModel
 from typing import Type
 
 
-def sublist_compement(containing_list: list, sublist: list):
+def sublist_complement(containing_list: list, sublist: list):
     return [i for i in containing_list if i not in sublist]
 
 
