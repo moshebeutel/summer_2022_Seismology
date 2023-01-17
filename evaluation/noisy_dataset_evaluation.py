@@ -16,27 +16,29 @@ def model_performance_on_dataset(model, dataset, labels, metric_func):
     return metric_func(labels, predictions)
 
 
-
-def eval_mse(model, traces, labels, batch_size=0):
+def eval_mse(model, traces, labels, ignore_events_above_samples_threshold=0, batch_size=0):
     num_traces = traces.shape[0]
     num_batches = 0
     if batch_size == 0:
-        batch_size=num_traces
+        batch_size = num_traces
         if num_traces > 64:
             raise ValueError(f'You supplied a big model - {num_traces} traces - specify batch size')
     else:
-        num_batches = ceil(num_traces / batch_size )
+        num_batches = ceil(num_traces / batch_size)
 
     se = torch.zeros((1,))
     i = 0
     for _ in tqdm(range(num_batches)):
-        batch_traces, batch_labels = traces[i:i+batch_size], labels[i:i+batch_size]
+        batch_traces, batch_labels = traces[i:i + batch_size], labels[i:i + batch_size]
         pred_dist = eval_batch(batch=batch_traces, model=model)
+        if ignore_events_above_samples_threshold > 0:
+            for j, l in enumerate(batch_labels):
+                pred_dist[j, :2, :(int(batch_labels[j]) - ignore_events_above_samples_threshold)] = 0
+                pred_dist[j, :2, (int(batch_labels[j]) + ignore_events_above_samples_threshold):] = 0
         predictions = torch.argmax(pred_dist[:, 0], dim=-1)
         se += torch.square(predictions - batch_labels).sum()
         i += batch_size
     return torch.sqrt(se / num_traces).item()
-
 
 
 def eval_noisy_vs_original(pretrained_model, dataset_labels, noisy_dataset, original_dataset, metrics_f=Metrics.mse):
@@ -146,12 +148,16 @@ if __name__ == '__main__':
     main(args)
 
 
-def find_large_error_traces(dataset: torch.tensor, labels: torch.tensor, model: torch.nn.Module,
-                            threshold_samples: int = 100, eval_fn=None) -> list[int]:
+def find_large_error_traces(dataset: torch.tensor,
+                            labels: torch.tensor, model: torch.nn.Module,
+                            threshold_samples: int = 100,
+                            ignore_errors_larger_than_samples=3000, eval_fn=None) -> list[int]:
     assert dataset.shape[0] == labels.shape[0]
+    predictions = max_onset_pred(eval_fn(dataset, model=model))
+    residuals = torch.abs(predictions - labels)
+
     large_error_idxs = [i for i in tqdm(range(dataset.shape[0])) if
-                        get_residual(prediction=predict(trace=dataset[i], model=model, eval_fn=eval_fn),
-                                     label=labels[i]) > threshold_samples]
+                        threshold_samples < residuals[i] < ignore_errors_larger_than_samples]
 
     return large_error_idxs
 
@@ -185,5 +191,5 @@ def predict(trace, model, eval_fn=None):
     return max_onset_pred(evaluation_fn(trace.unsqueeze(dim=0), model=model))
 
 
-def get_residual(prediction: int, label: int)->int:
-    return int(torch.abs(prediction-label))
+def get_residual(prediction: int, label: int) -> int:
+    return int(torch.abs(prediction - label))
