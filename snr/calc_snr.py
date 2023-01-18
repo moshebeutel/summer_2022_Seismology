@@ -49,12 +49,8 @@ class CalcSNR:
 
     @staticmethod
     def _calc_snr_max_amplitude_div_rms(trace, onset, window_length=100):
-#         half_window = int(window_length / 2.0)
-        # print('hwnd',half_window, 'onst', onset)
         max_signal_amp = np.max(np.abs(trace[onset: (onset + window_length)]))
         noise_rms = np.sqrt(np.mean(np.square(trace[:onset])))
-        # Convert to db
-        # 2 factor because it's a ratio of amplitudes not energies or powers
         return 2 * CalcSNR.to_db(float(max_signal_amp / noise_rms))
         
     @staticmethod
