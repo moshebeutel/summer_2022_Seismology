@@ -3,7 +3,7 @@ from snr.conversions import snr_to_factor
 from dataset_creation.noisy_dataset import create_noised_traces_shifted_noise
 import torch
 
-from utils.common import predict
+from evaluation.noisy_dataset_evaluation import predict
 from visualization.comparing_plots import plot_experiment_list
 
 

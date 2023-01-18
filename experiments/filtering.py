@@ -1,5 +1,5 @@
 from snr.filters import filter_fft
-from utils.common import predict, get_residual
+from evaluation.noisy_dataset_evaluation import predict, get_residual
 from visualization.comparing_plots import plot_compare
 
 
