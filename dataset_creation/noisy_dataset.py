@@ -142,7 +142,8 @@ if __name__ == '__main__':
 
 
 def create_single_noisy_version(original_traces: torch.tensor, original_labels: torch.tensor,
-                                augmented_noise_traces: torch.tensor, desired_snr: float):
+                                augmented_noise_traces: torch.tensor, desired_snr: float,
+                                snr_startegy: SnrCalcStrategy = SnrCalcStrategy.ENERGY_RATIO):
     num_original_traces = original_traces.shape[0]
     num_samples_original_trace = original_traces.shape[-1]
     assert original_labels.shape[0] == num_original_traces, f'Expected {num_original_traces} labels'
@@ -156,7 +157,7 @@ def create_single_noisy_version(original_traces: torch.tensor, original_labels: 
     # Create the noisy traces and get the ones that did not succeed
     version_noised_traces_list, version_noise_factors, version_not_included_indices =\
         create_noisy_traces(dataset=original_traces,desired_snr=desired_snr, labels=original_labels,
-                            noise_traces=noise_traces, calc_snr=CalcSNR(SnrCalcStrategy.ENERGY_RATIO))
+                            noise_traces=noise_traces, calc_snr=CalcSNR(snr_startegy))
     print(f'Created {len(version_noised_traces_list)} noisy traces')
     print(f'The following indices are not included {version_not_included_indices}')
     # Remove the corresponding indices from the full noises list and the label list
