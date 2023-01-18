@@ -11,7 +11,7 @@ from seisbench.data import WaveformDataset
 from torch.utils.data import DataLoader
 
 from snr.conversions import snr_to_factor
-from utils.common import try_get_saved_pt
+from utils.common import try_get_saved_pt, sublist_complement
 from tqdm import tqdm
 
 
@@ -153,3 +153,29 @@ def create_loader_by_phase_and_length(phase_label: str, trace_length: int, targe
 
     data_loader = DataLoader(gen, batch_size=batch_size, shuffle=True, num_workers=2)
     return data_loader, num_traces
+
+
+def remove_traces_not_to_use(noisy_traces_list, noisy_labels_list, noisy_data_path_list, num_of_original_traces):
+
+    total_indicies_not_to_use = []
+    snr_indices_used = []
+    for ndp in noisy_data_path_list:
+        snr_indices_not_used = torch.load(os.path.join(ndp, 'indices_not_used')).tolist()
+        total_indicies_not_to_use.extend(snr_indices_not_used)
+        snr_indices_used.append(
+            sublist_complement(containing_list=list(range(num_of_original_traces)), sublist=snr_indices_not_used))
+    total_indicies_not_to_use = list(set(total_indicies_not_to_use))
+
+
+    clean_noisy_traces_list=[]
+    clean_noisy_labels_list=[]
+    for i,ndp in enumerate(noisy_data_path_list):
+        snr_total_indicies_not_to_use = [k for k,l in enumerate(snr_indices_used[i]) if l in total_indicies_not_to_use]
+        snr_total_indicies_to_use = sublist_complement(containing_list=list(range(len(snr_indices_used[i]))),
+                                                       sublist=snr_total_indicies_not_to_use)
+        clean_noisy_traces_list.append(noisy_traces_list[i][snr_total_indicies_to_use])
+        clean_noisy_labels_list.append(noisy_labels_list[i][snr_total_indicies_to_use])
+
+    total_indicies_to_use = sublist_complement(containing_list=list(range(num_of_original_traces)),
+                                               sublist=total_indicies_not_to_use)
+    return clean_noisy_traces_list, clean_noisy_labels_list, total_indicies_to_use
