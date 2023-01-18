@@ -153,7 +153,7 @@ def find_large_error_traces(dataset: torch.tensor,
                             threshold_samples: int = 100,
                             ignore_errors_larger_than_samples=3000, eval_fn=None) -> list[int]:
     assert dataset.shape[0] == labels.shape[0]
-    predictions = max_onset_pred(eval_fn(dataset, model=model))
+    predictions = max_onset_pred_for_channel(eval_fn(dataset, model=model))
     residuals = torch.abs(predictions - labels)
 
     large_error_idxs = [i for i in tqdm(range(dataset.shape[0])) if
@@ -182,13 +182,13 @@ def eval_batch(batch, model):
     return pred
 
 
-def max_onset_pred(pred_probs):
-    return torch.argmax(pred_probs[:, 0], dim=1)
+def max_onset_pred_for_channel(pred_probs, channel=0):
+    return torch.argmax(pred_probs[:, channel], dim=-1)
 
 
 def predict(trace, model, eval_fn=None):
     evaluation_fn = eval_batch if eval_fn is None else eval_fn
-    return max_onset_pred(evaluation_fn(trace.unsqueeze(dim=0), model=model))
+    return max_onset_pred_for_channel(evaluation_fn(trace.unsqueeze(dim=0), model=model))
 
 
 def get_residual(prediction: int, label: int) -> int:

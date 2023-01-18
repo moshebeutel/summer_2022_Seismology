@@ -12,7 +12,7 @@ import torch
 from snr.calc_snr import CalcSNR
 from snr.conversions import snr_to_factor
 from utils.common import config_logger, set_seed
-from evaluation.noisy_dataset_evaluation import eval_batch, max_onset_pred
+from evaluation.noisy_dataset_evaluation import eval_batch, max_onset_pred_for_channel
 
 
 # import wandb as wandb
@@ -49,7 +49,7 @@ def main(args):
     trc = torch.clone(high_SNR_traces[trace_idx])
     original_trace_snr = SNR_of_high_SNR_traces[trace_idx]
     label = int(high_SNR_traces_labels[trace_idx].int())
-    residuals = max_onset_pred(pred_probs) - label
+    residuals = max_onset_pred_for_channel(pred_probs) - label
     num_of_levels = int(original_trace_snr) + 1
 
     # init fig
@@ -95,7 +95,7 @@ def main(args):
     noisy_trcs_stacked = torch.stack(noisy_traces)
     noisy_preds = eval_batch(noisy_trcs_stacked, phasenet_model)
     # compute residuals based on model predictions
-    residuals = max_onset_pred(noisy_preds) - label
+    residuals = max_onset_pred_for_channel(noisy_preds) - label
 
     # plot the added noises and the prediction distribution
     for i in range(1, num_of_levels + 1):
