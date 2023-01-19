@@ -11,7 +11,7 @@ from seisbench.data import WaveformDataset
 from torch.utils.data import DataLoader
 
 from snr.conversions import snr_to_factor
-from utils.common import try_get_saved_pt, sublist_complement
+from utils.common import try_get_saved_pt, sublist_complement, standardize_trace
 from tqdm import tqdm
 
 
@@ -33,13 +33,18 @@ def get_n_random_noises(num_noises: int,
         print('stack to tensor')
         random_n_noises = torch.stack(random_noises_list, dim=0)
         print(f'Stacked to tensor of shape {random_n_noises.shape}')
+        # random_n_noises = standardize_trace(random_n_noises)
+        # print('standardized')
+
         if save_to_pt:
             torch.save(random_n_noises, os.path.join(noises_path, filename))
 
     return random_n_noises
 
 
-def create_noisy_traces(dataset, desired_snr, labels, noise_traces, calc_snr) -> (list[torch.tensor], list[int]):
+def create_noisy_traces(dataset: torch.tensor, desired_snr: float, labels: torch.tensor, noise_traces: torch.tensor,
+                        calc_snr) -> \
+        (list[torch.tensor], list[int]):
     num_of_traces = dataset.shape[0]
     assert num_of_traces == noise_traces.shape[
         0], f'Expected one noise trace for each trace. Got {noise_traces.shape[0]} noise_traces for' \
@@ -70,8 +75,8 @@ def create_noisy_traces(dataset, desired_snr, labels, noise_traces, calc_snr) ->
 
         if factor < insane_factor_4_snr_to_factor:
             # Merge the trace with a multiplication of the noise
-            # TODO Reduce noise mean
             noisy_trace = tr + factor * noise
+            # noisy_trace = standardize_trace(noisy_trace) if standardize else noisy_trace
             noised_traces_list.append(noisy_trace)
             factors.append(factor)
         else:
@@ -102,7 +107,7 @@ def trim_to_maximum_aligned_time_segment(st: Stream) -> Stream:
 
 
 def get_random_noise_trace(noises_path: str = 'Noises', sampling_rate: float = -1,
-                           silent_exception_prints=False) -> torch.tensor:
+                           silent_exception_prints: bool = False) -> torch.tensor:
     st = None
     noises_folders = os.listdir(noises_path)
     random_folder = random.choice(noises_folders)
@@ -155,8 +160,10 @@ def create_loader_by_phase_and_length(phase_label: str, trace_length: int, targe
     return data_loader, num_traces
 
 
-def remove_traces_not_to_use(noisy_traces_list, noisy_labels_list, noisy_data_path_list, num_of_original_traces):
-
+def remove_traces_not_to_use(noisy_traces_list: list[torch.tensor], noisy_labels_list: list[torch.tensor],
+                             noisy_data_path_list: list[str], num_of_original_traces: int) -> (
+        list[torch.tensor], list[torch.tensor], list[int]):
+    assert num_of_original_traces > 0, f'Expected positive number of original traces. Got {num_of_original_traces}'
     total_indicies_not_to_use = []
     snr_indices_used = []
     for ndp in noisy_data_path_list:
@@ -166,16 +173,15 @@ def remove_traces_not_to_use(noisy_traces_list, noisy_labels_list, noisy_data_pa
             sublist_complement(containing_list=list(range(num_of_original_traces)), sublist=snr_indices_not_used))
     total_indicies_not_to_use = list(set(total_indicies_not_to_use))
 
-
-    clean_noisy_traces_list=[]
-    clean_noisy_labels_list=[]
-    for i,ndp in enumerate(noisy_data_path_list):
-        snr_total_indicies_not_to_use = [k for k,l in enumerate(snr_indices_used[i]) if l in total_indicies_not_to_use]
+    clean_noisy_traces_list = []
+    clean_noisy_labels_list = []
+    for i, ndp in enumerate(noisy_data_path_list):
+        snr_total_indicies_not_to_use = [k for k, l in enumerate(snr_indices_used[i]) if l in total_indicies_not_to_use]
         snr_total_indicies_to_use = sublist_complement(containing_list=list(range(len(snr_indices_used[i]))),
                                                        sublist=snr_total_indicies_not_to_use)
         clean_noisy_traces_list.append(noisy_traces_list[i][snr_total_indicies_to_use])
         clean_noisy_labels_list.append(noisy_labels_list[i][snr_total_indicies_to_use])
 
-    total_indicies_to_use = sublist_complement(containing_list=list(range(num_of_original_traces)),
-                                               sublist=total_indicies_not_to_use)
+    total_indicies_to_use: list[int] = sublist_complement(containing_list=list(range(num_of_original_traces)),
+                                                          sublist=total_indicies_not_to_use)
     return clean_noisy_traces_list, clean_noisy_labels_list, total_indicies_to_use

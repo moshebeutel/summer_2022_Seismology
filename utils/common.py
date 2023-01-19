@@ -119,11 +119,11 @@ def load_pretrained_model(model_class: Type[SeisBenchModel], dataset_trained_on)
     return model_class.from_pretrained(dataset_trained_on)
 
 
-def standardize_trace(trace: torch.tensor):
-    m = trace.float().mean(dim=-1, keepdim=True).unsqueeze(dim=0)
-    std = trace.float().std(dim=-1, keepdim=True).unsqueeze(dim=0)
-    trace = trace.unsqueeze(dim=0) if trace.dim() == 1 else trace
-    standardized = torch.stack([(trace[ch] - m[0, ch]) / std[0, ch] for ch in range(trace.shape[0])], dim=0)
+def standardize_trace(trace: torch.tensor) -> torch.tensor:
+    m = trace.float().mean(dim=-1, keepdim=True)
+    std = trace.float().std(dim=-1, keepdim=True)
+    standardized = (trace - m) / std
+    # standardized = (trace - m)
     assert standardized.shape == trace.shape, f'Standardization should not change shape. Got {standardized.shape}'
     return standardized
 
