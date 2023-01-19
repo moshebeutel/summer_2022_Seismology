@@ -1,6 +1,6 @@
 from snr.calc_snr import CalcSNR, SnrCalcStrategy
 from snr.conversions import snr_to_factor
-from dataset_creation.noisy_dataset import create_noised_traces_shifted_noise
+from dataset_creation.future.utils import create_noised_traces_shifted_noise
 import torch
 
 from evaluation.noisy_dataset_evaluation import predict
@@ -8,7 +8,7 @@ from visualization.comparing_plots import plot_experiment_list
 
 
 def shifting_experiment(trace, full_noise_trace, label: int, model: torch.nn.Module, synthesized_snr: int,
-                        num_shifts: int, save_plot_to: str = '', eval_fn=None, silent_prints: bool = False):
+                        num_shifts: int, save_plot_to: str = '', silent_prints: bool = False):
     # Enable print silencing by the caller
     print_fn = lambda string: None if silent_prints else print(string)
     num_samples = trace.shape[-1]
@@ -34,7 +34,7 @@ def shifting_experiment(trace, full_noise_trace, label: int, model: torch.nn.Mod
         create_noised_traces_shifted_noise(trace=trace, full_noise_trace=full_noise_trace,
                                            factor=factor, num_of_shifts=num_shifts)
 
-    predictions: list[int] = [int(predict(trace=noised_traces_shifted_noise[i], model=model, eval_fn=eval_fn)) for i in
+    predictions: list[int] = [int(predict(trace=noised_traces_shifted_noise[i], model=model)) for i in
                               range(len(noised_traces_shifted_noise))]
 
     plot_experiment_list(experiment_traces=noised_traces_shifted_noise, label=label, predictions=predictions,
