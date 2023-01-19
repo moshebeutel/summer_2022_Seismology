@@ -1,9 +1,10 @@
 import torch
 
 
-def snr_to_factor(trace, label, clean_snr, desired_snr, noise_trace, calc_snr, precision=0.0099,
-                  insane_factor=100000000):
-    assert desired_snr <= int(clean_snr), 'desired_snr should be less than the clean snr'
+def snr_to_factor(trace: torch.tensor, label, clean_snr: float, desired_snr: float, noise_trace: torch.tensor,
+                  calc_snr, precision: float = 0.0099,
+                  insane_factor: float = 100000000) -> float:
+    assert desired_snr <= int(clean_snr), 'Desired_snr should be less than the clean snr'
     factor = 0
     diff = 100
     fix_step = 100000.0
@@ -22,6 +23,5 @@ def snr_to_factor(trace, label, clean_snr, desired_snr, noise_trace, calc_snr, p
         if new_positive_diff != positive_diff:
             positive_diff = new_positive_diff
             fix_step /= (-2.0)
-
     return factor
 

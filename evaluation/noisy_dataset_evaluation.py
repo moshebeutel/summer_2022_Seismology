@@ -11,7 +11,7 @@ from utils.common import config_logger, set_seed, shuffle_tensors, load_dataset
 
 def model_performance_on_dataset(model, dataset, labels, metric_func):
     pred_dist = eval_batch(dataset, model)
-    predictions = torch.argmax(pred_dist[:, 0], axis=1)
+    predictions = torch.argmax(pred_dist[:, 0], dim=-1)
     assert labels.shape[0] == predictions.shape[0]
     return metric_func(labels, predictions)
 
@@ -151,9 +151,9 @@ if __name__ == '__main__':
 def find_large_error_traces(dataset: torch.tensor,
                             labels: torch.tensor, model: torch.nn.Module,
                             threshold_samples: int = 100,
-                            ignore_errors_larger_than_samples=3000, eval_fn=None) -> list[int]:
+                            ignore_errors_larger_than_samples=3000) -> list[int]:
     assert dataset.shape[0] == labels.shape[0]
-    predictions = max_onset_pred_for_channel(eval_fn(dataset, model=model))
+    predictions = max_onset_pred_for_channel(eval_batch(dataset, model=model))
     residuals = torch.abs(predictions - labels)
 
     large_error_idxs = [i for i in tqdm(range(dataset.shape[0])) if
@@ -174,22 +174,42 @@ def search_large_errors_given_desired_snr(model: torch.nn.Module, dataset: torch
 
     return large_error_indexes
 
-
-def eval_batch(batch, model):
-    with torch.no_grad():
-        pred = model(batch)
-        pred = pred.cpu()
-    return pred
+#
+# def eval_batch(batch, model):
+#     with torch.no_grad():
+#         pred = model(batch)
+#         pred = pred.cpu()
+#     return pred
 
 
 def max_onset_pred_for_channel(pred_probs, channel=0):
     return torch.argmax(pred_probs[:, channel], dim=-1)
 
 
-def predict(trace, model, eval_fn=None):
-    evaluation_fn = eval_batch if eval_fn is None else eval_fn
-    return max_onset_pred_for_channel(evaluation_fn(trace.unsqueeze(dim=0), model=model))
+def predict(trace, model):
+    return max_onset_pred_for_channel(eval_batch(trace.unsqueeze(dim=0), model=model))
 
 
 def get_residual(prediction: int, label: int) -> int:
     return int(torch.abs(prediction - label))
+
+
+# evaluation function for EqTransformer. Model returns a tuple instead of a tensor. For P phase should look at the tensor at index =1 of the tuple
+def eval_batch(batch, model):
+    with torch.no_grad():
+        pred = model(batch)
+        if model.name == 'EQTransformer':
+            # transform the returned tuple to the same shape as
+            # phasenet where channel 0 is the p phase characteristic function.
+            # EQTransformer returns a tuple (N,Z,E)
+            pred = torch.stack((pred[1], pred[0], pred[2]), dim=0).swapaxes(0, 1)
+        pred = pred.cpu()
+    return pred
+
+@torch.no_grad()
+def batch_max_values_and_residuals(batch: torch.tensor, labels: torch.tensor, model):
+    pred_prob = eval_batch(batch=batch, model=model)
+    max_values = torch.max(pred_prob[:,0], dim=-1).values
+    predictions = torch.argmax(pred_prob[:,0], dim=-1)
+    residuals = torch.abs(predictions-labels)
+    return max_values, residuals
